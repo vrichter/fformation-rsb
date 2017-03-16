@@ -38,7 +38,7 @@ the persons to groups and publishes a corresponding
 ### 3rd party software used
 
 * [Boost](http://www.boost.org/ "Boost C++ Libraries") because it is boost.
-* [rsb](https://code.cor-lab.de/projects/rsb) IPC-Middleware
+* [rsb](https://code.cor-lab.de/projects/rsb) Communication Middleware
 * [rst](https://code.cor-lab.de/projects/rst) Type specifications for rsb
 * [rsb-experimental](https://projects.cit-ec.uni-bielefeld.de/projects/rst-experimental) Additional rst types in revision process for the real rst
 * [gco-v3.0](https://github.com/vrichter/gco-v3.0) for the graph-cuts optimization
