@@ -82,7 +82,11 @@ include_directories(
   ${RSB_INCLUDE_DIRS}
 )
 
-link_directories(${Boost_LIBRARY_DIRS})
+link_directories(
+  ${Boost_LIBRARY_DIRS}
+  ${FFORMATION_DIRS}
+  ${RSB_LIBRARY_DIRS}
+  )
 
 add_definitions(${RSB_DEFINITIONS})
 
@@ -98,9 +102,10 @@ foreach(APP ${APPS})
     ${GCO_LIBRARIES}
     ${RSB_LIBRARIES}
     )
+  install(TARGETS "${PROJECT_NAME}-${APP}"
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib/static
+    PERMISSIONS OWNER_READ OWNER_WRITE GROUP_READ GROUP_WRITE
+    )
 endforeach(APP)
-
-install(DIRECTORY "${PROJECT_SOURCE_DIR}/src/"
-        DESTINATION "include/${PROJECT_NAME}/"
-        FILES_MATCHING PATTERN "*.h" PATTERN "*.inl"
-        PATTERN "matlab" EXCLUDE)
