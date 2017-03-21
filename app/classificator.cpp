@@ -20,6 +20,7 @@
 #include <boost/timer.hpp>
 #include <fformation/GroupDetectorFactory.h>
 #include <iostream>
+#include <rsc/misc/SignalWaiter.h>
 
 #if HAVE_GCO
 #include "GraphCutsOptimization.h"
@@ -98,4 +99,7 @@ int main(const int argc, const char **args) {
   auto outscope = program_options["outscope"].as<std::string>();
   auto rsb_cl = RsbClassificator(factory.create(config.first, config.second),
                                  inscope, outscope);
+
+  rsc::misc::initSignalWaiter();
+  return rsc::misc::waitForSignal();
 }
