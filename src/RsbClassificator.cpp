@@ -140,31 +140,33 @@ static OPose2D findBodyPose(const rst::hri::PersonHypothesis &person,
   return OPose2D();
 }
 
-static std::vector<OPose2D>
+static std::vector<std::pair<OPose2D,std::string>>
 findPersonsPose(const rst::hri::PersonHypothesis &person,
                 const FrameTransform &tf) {
-  return std::vector<OPose2D>({
-      findHeadPose(person, tf), findFacePose(person, tf),
-      findBodyPose(person, tf),
+  return std::vector<std::pair<OPose2D,std::string>>({
+      std::make_pair(findHeadPose(person, tf),"head"),
+      std::make_pair(findFacePose(person, tf),"face"),
+      std::make_pair(findBodyPose(person, tf),"body"),
   });
 }
 
-static Pose2D findBestPose(const std::vector<OPose2D> &poses) {
-  OPose2D best;
+static Pose2D findBestPose(const std::vector<std::pair<OPose2D,std::string>> &poses) {
+  std::pair<OPose2D,std::string> best;
   // find the first with position and rotation or at least the first with
   // position
   for (auto pose : poses) {
-    if (pose) {
-      if (pose.get().rotation()) {
+    if (pose.first) {
+      if (pose.first.get().rotation()) {
         best = pose;
         break;
-      } else if (!best) {
+      } else if (!best.first) {
         best = pose;
       }
     }
   }
-  if (best) {
-    return best.get();
+  if (best.first) {
+    DEBUG_LOG("Using pose from '" << best.second << "' = " << best.first.get());
+    return best.first.get();
   }
   throw fformation::Exception("No position information found.");
 }
