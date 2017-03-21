@@ -222,12 +222,35 @@ rsb::EventPtr createEvent(OutTypePtr data, rsb::EventPtr &from) {
   return result;
 }
 
+template <typename Type> void register_rst() {
+  // try to register converter if not already done
+  try {
+    boost::shared_ptr<rsb::converter::ProtocolBufferConverter<Type>> converter(
+        new rsb::converter::ProtocolBufferConverter<Type>());
+    std::cout << "Register converter: " << rsc::runtime::typeName<Type>()
+              << std::endl;
+    rsb::converter::converterRepository<std::string>()->registerConverter(
+        converter);
+  } catch (const std::exception &e) {
+    // already available do nothing
+  }
+}
+
+template <typename First, typename Second, typename... Rest>
+void register_rst() {
+  // register list recursive
+  register_rst<First>();
+  register_rst<Second, Rest...>();
+}
+
+
 RsbClassificator::RsbClassificator(GroupDetector::Ptr detector,
                                    const std::string &in_scope,
                                    const std::string &out_scope)
     : _detector(nullptr), _listener(nullptr), _informer(nullptr),
       _transform(new FrameTransform()), _tracker(new GroupTracker) {
   _detector.swap(detector);
+  register_rst<rst::hri::PersonHypotheses,rst::hri::ConversationalGroupCollection>();
   _listener = rsb::getFactory().createListener(in_scope);
   _informer = rsb::getFactory().createInformer<OutType>(out_scope);
   _listener->addFilter(
