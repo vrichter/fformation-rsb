@@ -107,6 +107,7 @@ static OPose2D findHeadPose(const rst::hri::PersonHypothesis &person,
     auto location = person.head().shape().transformation();
     return OPose2D(tf.transform(location.translation(), location.rotation()));
   }
+  return  OPose2D();
 }
 
 static OPose2D findFacePose(const rst::hri::PersonHypothesis &person,
@@ -121,6 +122,7 @@ static OPose2D findFacePose(const rst::hri::PersonHypothesis &person,
       return OPose2D(tf.transform(person.face().location()));
     }
   }
+  return OPose2D();
 }
 
 static OPose2D findBodyPose(const rst::hri::PersonHypothesis &person,
@@ -135,12 +137,13 @@ static OPose2D findBodyPose(const rst::hri::PersonHypothesis &person,
       return OPose2D(tf.transform(person.face().location()));
     }
   }
+  return OPose2D();
 }
 
 static std::vector<OPose2D>
 findPersonsPose(const rst::hri::PersonHypothesis &person,
                 const FrameTransform &tf) {
-  std::vector<OPose2D> poses({
+  return std::vector<OPose2D>({
       findHeadPose(person, tf), findFacePose(person, tf),
       findBodyPose(person, tf),
   });
@@ -206,6 +209,7 @@ OutTypePtr createResultData(const Classification &cl, InTypePtr source) {
   for (auto group : cl.idGroups()) {
     fillGroup(result->add_element(), group, source);
   }
+  return result;
 }
 
 rsb::EventPtr createEvent(OutTypePtr data, rsb::EventPtr &from) {
