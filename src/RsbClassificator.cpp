@@ -212,14 +212,13 @@ OutTypePtr createResultData(const Classification &cl, InTypePtr source) {
   return result;
 }
 
-rsb::EventPtr createEvent(OutTypePtr data, rsb::EventPtr &from) {
-  rsb::EventPtr result(new rsb::Event());
+rsb::EventPtr fillEvent(OutTypePtr data, rsb::EventPtr &from, rsb::EventPtr to) {
   for (auto cause : from->getCauses()) {
-    result->addCause(cause);
+    to->addCause(cause);
   }
-  result->addCause(from->getId());
-  result->setData(data);
-  return result;
+  to->addCause(from->getId());
+  to->setData(data);
+  return to;
 }
 
 template <typename Type> void register_rst() {
@@ -268,6 +267,6 @@ void RsbClassificator::handle(rsb::EventPtr event) {
   auto result = createResultData(
       classification, boost::static_pointer_cast<InType>(event->getData()));
   _tracker->track(result);
-  auto result_event = createEvent(result, event);
+  auto result_event = fillEvent(result, event, _informer->createEvent());
   _informer->publish(result_event);
 }
