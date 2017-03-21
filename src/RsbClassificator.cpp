@@ -17,6 +17,10 @@
 
 #include "RsbClassificator.h"
 #include <fformation/Exception.h>
+
+// need to turn off warnings for rsb includes
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <rsb/Event.h>
 #include <rsb/EventId.h>
 #include <rsb/Factory.h>
@@ -27,6 +31,10 @@
 #include <rst/generic/Dictionary.pb.h>
 #include <rst/hri/ConversationalGroupCollection.pb.h>
 #include <rst/hri/PersonHypotheses.pb.h>
+#include <rsb/converter/ProtocolBufferConverter.h>
+#include <rsb/converter/Repository.h>
+#pragma GCC diagnostic pop
+
 
 using fformation::GroupDetector;
 using fformation::Timestamp;
