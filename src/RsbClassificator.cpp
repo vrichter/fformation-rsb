@@ -266,6 +266,7 @@ RsbClassificator::RsbClassificator(GroupDetector::Ptr detector,
 void RsbClassificator::handle(rsb::EventPtr event) {
   auto observation = createObservation(event, *_transform);
   auto classification = _detector->detect(observation);
+  DEBUG_LOG("Classified group:\n" << classification << "\nfrom\n" << observation);
   auto result = createResultData(
       classification, boost::static_pointer_cast<InType>(event->getData()));
   _tracker->track(result);
