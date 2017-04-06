@@ -1,6 +1,6 @@
 /********************************************************************
 **                                                                 **
-** File   : src/rsb/RsbClassificator.cpp                           **
+** File   : src/RsbClassificator.cpp                               **
 ** Authors: Viktor Richter                                         **
 **                                                                 **
 **                                                                 **
@@ -27,14 +27,14 @@
 #include <rsb/Handler.h>
 #include <rsb/Informer.h>
 #include <rsb/Listener.h>
+#include <rsb/converter/ProtocolBufferConverter.h>
+#include <rsb/converter/Repository.h>
 #include <rsb/filter/TypeFilter.h>
 #include <rst/generic/Dictionary.pb.h>
 #include <rst/hri/ConversationalGroupCollection.pb.h>
 #include <rst/hri/PersonHypotheses.pb.h>
-#include <rsb/converter/ProtocolBufferConverter.h>
-#include <rsb/converter/Repository.h>
 #pragma GCC diagnostic pop
-
+#include "Macros.h"
 
 using fformation::GroupDetector;
 using fformation::Timestamp;
@@ -51,18 +51,6 @@ typedef boost::shared_ptr<OutType> OutTypePtr;
 typedef rst::hri::PersonHypotheses InType;
 typedef boost::shared_ptr<InType> InTypePtr;
 typedef boost::optional<Pose2D> OPose2D;
-
-#define DEBUG_LOG(x)                                                           \
-  { std::cerr << __FILE__ << "[" << __LINE__ << "]:\t" x << std::endl; }
-
-#define ASSERT(test, message)                                                  \
-  {                                                                            \
-    if (!(test)) {                                                             \
-      std::stringstream str;                                                   \
-      str << message;                                                          \
-      throw fformation::Exception(str.str());                                  \
-    }                                                                          \
-  }
 
 class FrameTransform {
 public:
@@ -86,17 +74,6 @@ public:
   }
 };
 
-class GroupTracker {
-public:
-  void track(OutTypePtr current) {
-    DEBUG_LOG("not tracking");
-    _last = current;
-  }
-
-private:
-  OutTypePtr _last;
-};
-
 static Timestamp createTimestamp(rsb::EventPtr event) {
   return Timestamp(event->getId().getSequenceNumber());
 }
@@ -107,7 +84,7 @@ static OPose2D findHeadPose(const rst::hri::PersonHypothesis &person,
     auto location = person.head().shape().transformation();
     return OPose2D(tf.transform(location.translation(), location.rotation()));
   }
-  return  OPose2D();
+  return OPose2D();
 }
 
 static OPose2D findFacePose(const rst::hri::PersonHypothesis &person,
@@ -140,18 +117,19 @@ static OPose2D findBodyPose(const rst::hri::PersonHypothesis &person,
   return OPose2D();
 }
 
-static std::vector<std::pair<OPose2D,std::string>>
+static std::vector<std::pair<OPose2D, std::string>>
 findPersonsPose(const rst::hri::PersonHypothesis &person,
                 const FrameTransform &tf) {
-  return std::vector<std::pair<OPose2D,std::string>>({
-      std::make_pair(findHeadPose(person, tf),"head"),
-      std::make_pair(findFacePose(person, tf),"face"),
-      std::make_pair(findBodyPose(person, tf),"body"),
+  return std::vector<std::pair<OPose2D, std::string>>({
+      std::make_pair(findBodyPose(person, tf), "body"),
+      std::make_pair(findHeadPose(person, tf), "head"),
+      std::make_pair(findFacePose(person, tf), "face"),
   });
 }
 
-static Pose2D findBestPose(const std::vector<std::pair<OPose2D,std::string>> &poses) {
-  std::pair<OPose2D,std::string> best;
+static Pose2D
+findBestPose(const std::vector<std::pair<OPose2D, std::string>> &poses) {
+  std::pair<OPose2D, std::string> best;
   // find the first with position and rotation or at least the first with
   // position
   for (auto pose : poses) {
@@ -214,7 +192,8 @@ OutTypePtr createResultData(const Classification &cl, InTypePtr source) {
   return result;
 }
 
-rsb::EventPtr fillEvent(OutTypePtr data, rsb::EventPtr &from, rsb::EventPtr to) {
+rsb::EventPtr fillEvent(OutTypePtr data, rsb::EventPtr &from,
+                        rsb::EventPtr to) {
   for (auto cause : from->getCauses()) {
     to->addCause(cause);
   }
@@ -244,14 +223,33 @@ void register_rst() {
   register_rst<Second, Rest...>();
 }
 
+std::string calculateWeights(const Classification &cl, const Observation &ob,
+                             const Person::Stride &stride, double mdl) {
+  std::stringstream str;
+  str << "costs: [ ";
+  for (auto group : cl.createGroups(ob)) {
+    str << "(" << group.persons().size() << ") ";
+    auto center = group.calculateCenter(stride);
+    for(auto person : group.persons()){
+      str << person.second.calculateDistanceCosts(center,stride) << " + ";
+    }
+    str << " = " << group.calculateDistanceCosts(stride) << ", ";
+  }
+  str << "] mdl:  " << mdl;
+  return str.str();
+}
 
 RsbClassificator::RsbClassificator(GroupDetector::Ptr detector,
                                    const std::string &in_scope,
-                                   const std::string &out_scope)
+                                   const std::string &out_scope,
+                                   const fformation::Options &options)
     : _detector(nullptr), _listener(nullptr), _informer(nullptr),
-      _transform(new FrameTransform()), _tracker(new GroupTracker) {
+      _transform(new FrameTransform()), _tracker(options),
+      _stride(options.getValue<double>("stride")),
+      _mdl(options.getValue<double>("mdl")) {
   _detector.swap(detector);
-  register_rst<rst::hri::PersonHypotheses,rst::hri::ConversationalGroupCollection>();
+  register_rst<rst::hri::PersonHypotheses,
+               rst::hri::ConversationalGroupCollection>();
   _listener = rsb::getFactory().createListener(in_scope);
   _informer = rsb::getFactory().createInformer<OutType>(out_scope);
   _listener->addFilter(
@@ -264,12 +262,20 @@ RsbClassificator::RsbClassificator(GroupDetector::Ptr detector,
 }
 
 void RsbClassificator::handle(rsb::EventPtr event) {
-  auto observation = createObservation(event, *_transform);
-  auto classification = _detector->detect(observation);
-  DEBUG_LOG("Classified group:\n" << classification << "\nfrom\n" << observation);
-  auto result = createResultData(
-      classification, boost::static_pointer_cast<InType>(event->getData()));
-  _tracker->track(result);
-  auto result_event = fillEvent(result, event, _informer->createEvent());
-  _informer->publish(result_event);
+  try {
+    auto observation = createObservation(event, *_transform);
+    auto classification = _detector->detect(observation);
+    DEBUG_LOG("Classified group:\n"
+              << classification << "\nfrom\n"
+              << observation);
+    TRACE_LOG("Weights: " << calculateWeights(classification, observation, _stride, _mdl));
+    auto result = createResultData(
+        classification, boost::static_pointer_cast<InType>(event->getData()));
+    _tracker.track(result);
+    auto result_event = fillEvent(result, event, _informer->createEvent());
+    _informer->publish(result_event);
+  } catch (std::exception &e) {
+    WARNING_LOG("Error: " << e.what());
+    throw;
+  }
 }

@@ -98,7 +98,7 @@ int main(const int argc, const char **args) {
   auto inscope = program_options["inscope"].as<std::string>();
   auto outscope = program_options["outscope"].as<std::string>();
   auto rsb_cl = RsbClassificator(factory.create(config.first, config.second),
-                                 inscope, outscope);
+                                 inscope, outscope,config.second);
 
   rsc::misc::initSignalWaiter();
   return rsc::misc::waitForSignal();

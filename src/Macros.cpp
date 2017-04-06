@@ -1,6 +1,6 @@
 /********************************************************************
 **                                                                 **
-** File   : src/RsbClassificator.h                                 **
+** File   : src/Macros.cpp                                         **
 ** Authors: Viktor Richter                                         **
 **                                                                 **
 **                                                                 **
@@ -15,29 +15,4 @@
 **                                                                 **
 ********************************************************************/
 
-#include <ConversationalGroupTracker.h>
-#include <fformation/GroupDetector.h>
-#include <rsb/Informer.h>
-#include <rsb/Listener.h>
-#include <rst/hri/ConversationalGroupCollection.pb.h>
-
-class FrameTransform;
-
-class RsbClassificator {
-public:
-  RsbClassificator(fformation::GroupDetector::Ptr detector,
-                   const std::string &in_scope, const std::string &out_scope,
-                   const fformation::Options &options = fformation::Options());
-
-private:
-  void handle(rsb::EventPtr event);
-
-  fformation::GroupDetector::Ptr _detector;
-  rsb::ListenerPtr _listener;
-  rsb::Informer<rst::hri::ConversationalGroupCollection>::Ptr _informer;
-  std::shared_ptr<FrameTransform> _transform;
-  ConversationalGroupTracker _tracker;
-  rsb::HandlerPtr _handler;
-  fformation::Person::Stride _stride;
-  double _mdl;
-};
+#include "Macros.h"

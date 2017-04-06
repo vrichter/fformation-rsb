@@ -3,8 +3,8 @@
 project(fformation-rsb)
 cmake_minimum_required(VERSION 2.8)
 
-set(PROJECT_VERSION_MAJOR 0)
-set(PROJECT_VERSION_MINOR 9)
+set(PROJECT_VERSION_MAJOR 1)
+set(PROJECT_VERSION_MINOR 0)
 set(PROJECT_VERSIOM_PATCH 0)
 set(PROJECT_NUMBER "v${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSIOM_PATCH}")
 
@@ -26,7 +26,7 @@ endif()
 
 
 find_package(Boost 1.54 COMPONENTS program_options REQUIRED)
-find_package(fformation 2.0 REQUIRED)
+find_package(fformation 2.1 REQUIRED)
 find_package(RSB REQUIRED)
 find_package(RCT REQUIRED)
 find_package(RST REQUIRED sandbox deprecated)

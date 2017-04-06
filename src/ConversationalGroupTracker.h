@@ -1,6 +1,6 @@
 /********************************************************************
 **                                                                 **
-** File   : src/RsbClassificator.h                                 **
+** File   : src/ConversationalGroupTracker.h                       **
 ** Authors: Viktor Richter                                         **
 **                                                                 **
 **                                                                 **
@@ -15,29 +15,20 @@
 **                                                                 **
 ********************************************************************/
 
-#include <ConversationalGroupTracker.h>
-#include <fformation/GroupDetector.h>
-#include <rsb/Informer.h>
-#include <rsb/Listener.h>
+#include <boost/shared_ptr.hpp>
+#include <fformation/Options.h>
 #include <rst/hri/ConversationalGroupCollection.pb.h>
 
-class FrameTransform;
-
-class RsbClassificator {
+class ConversationalGroupTracker {
 public:
-  RsbClassificator(fformation::GroupDetector::Ptr detector,
-                   const std::string &in_scope, const std::string &out_scope,
-                   const fformation::Options &options = fformation::Options());
+  typedef rst::hri::ConversationalGroup Group;
+  typedef rst::hri::ConversationalGroupCollection Groups;
+  typedef boost::shared_ptr<Groups> GroupsPtr;
+
+  ConversationalGroupTracker(const fformation::Options &options);
+
+  void track(GroupsPtr update);
 
 private:
-  void handle(rsb::EventPtr event);
-
-  fformation::GroupDetector::Ptr _detector;
-  rsb::ListenerPtr _listener;
-  rsb::Informer<rst::hri::ConversationalGroupCollection>::Ptr _informer;
-  std::shared_ptr<FrameTransform> _transform;
-  ConversationalGroupTracker _tracker;
-  rsb::HandlerPtr _handler;
-  fformation::Person::Stride _stride;
-  double _mdl;
+  GroupsPtr _current;
 };
